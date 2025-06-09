@@ -1,3 +1,8 @@
-Place your sound file here if you prefer a custom audio notification.
-The script uses a simple system beep by default and does not require
-this file.
+Place optional audio files in this directory to customize the sounds
+played at the start and end of each phase.
+
+- `start.wav` is used when a phase begins.
+- `end.wav` is used when a phase ends or the cycle is reset.
+
+If these files are absent the program falls back to a simple system
+beep.

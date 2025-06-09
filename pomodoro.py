@@ -1,6 +1,7 @@
 import argparse
 import platform
 import tkinter as tk
+from pathlib import Path
 from tkinter import ttk
 from typing import Optional
 
@@ -9,14 +10,19 @@ try:
 except ImportError:  # pragma: no cover - optional dependency
     notification = None
 
+try:
+    from playsound import playsound
+except ImportError:  # pragma: no cover - optional dependency
+    playsound = None
+
 # Cross-platform sound notification
 if platform.system() == 'Windows':
     import winsound
 
-    def play_sound() -> None:
+    def beep() -> None:
         winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
 else:
-    def play_sound() -> None:
+    def beep() -> None:
         print('\a')
 
 
@@ -30,11 +36,33 @@ TEST_LONG_BREAK = 15
 
 SETS_BEFORE_LONG_BREAK = 4
 
+# Sound file paths (optional)
+SOUND_DIR = Path(__file__).parent / 'sound'
+START_SOUND = SOUND_DIR / 'start.wav'
+END_SOUND = SOUND_DIR / 'end.wav'
+
+
+def _play_file(path: Path) -> None:
+    if playsound and path.exists():
+        try:
+            playsound(str(path))
+            return
+        except Exception:
+            pass
+    beep()
+
+
+def play_start_sound() -> None:
+    _play_file(START_SOUND)
+
+
+def play_end_sound() -> None:
+    _play_file(END_SOUND)
+
 
 def notify(title: str, message: str) -> None:
     if notification:
         notification.notify(title=title, message=message, timeout=10)
-    play_sound()
 
 
 class PomodoroApp:
@@ -95,12 +123,14 @@ class PomodoroApp:
         self.set_count = 1
         self._update_labels()
         self.progress.config(maximum=1, value=0)
+        play_end_sound()
         notify('Pomodoro', 'Cycle reset')
 
     def _start_work(self) -> None:
         self.state = 'Work'
         self.remaining = self.work_seconds
         self.progress.config(maximum=self.work_seconds, value=0)
+        play_start_sound()
         notify(
             'Pomodoro',
             f'Start working! Set {self.set_count}/{self.sets_before_long}',
@@ -112,6 +142,7 @@ class PomodoroApp:
         self.state = 'Short Break'
         self.remaining = self.short_break_seconds
         self.progress.config(maximum=self.short_break_seconds, value=0)
+        play_start_sound()
         notify('Pomodoro', 'Short break!')
         self._update_labels()
         self._schedule_tick()
@@ -120,6 +151,7 @@ class PomodoroApp:
         self.state = 'Long Break'
         self.remaining = self.long_break_seconds
         self.progress.config(maximum=self.long_break_seconds, value=0)
+        play_start_sound()
         notify('Pomodoro', 'Long break!')
         self._update_labels()
         self._schedule_tick()
@@ -139,6 +171,7 @@ class PomodoroApp:
             self._schedule_tick()
 
     def _advance_phase(self) -> None:
+        play_end_sound()
         if self.state == 'Work':
             if self.set_count == self.sets_before_long:
                 self._start_long_break()

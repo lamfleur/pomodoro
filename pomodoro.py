@@ -11,9 +11,9 @@ except ImportError:
     notification = None
 
 try:
-    from playsound import playsound
+    import simpleaudio as sa
 except ImportError:
-    playsound = None
+    sa = None
 
 # クロスプラットフォーム用 フォールバックbeep
 if platform.system() == 'Windows':
@@ -37,12 +37,11 @@ SETS_BEFORE_LONG_BREAK = 4
 
 # サウンドファイル
 SOUND_DIR = Path(__file__).parent / 'sound'
-SOUND_EXTS = ['.wav', '.mp3']
+SOUND_EXTS = ['.wav']
 START_BASENAME = 'start'
 END_BASENAME = 'end'
 
 def _find_sound_file(basename: str) -> Optional[Path]:
-    """basename.wav/mp3 のどちらか存在するファイルパスを返す"""
     for ext in SOUND_EXTS:
         p = SOUND_DIR / f'{basename}{ext}'
         if p.exists():
@@ -50,12 +49,13 @@ def _find_sound_file(basename: str) -> Optional[Path]:
     return None
 
 def _play_file(path: Path) -> None:
-    if playsound and path.exists():
+    if sa and path.exists() and path.suffix.lower() == ".wav":
         try:
-            playsound(str(path), block=False)
+            wave_obj = sa.WaveObject.from_wave_file(str(path))
+            wave_obj.play()
             return
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[DEBUG] simpleaudio error: {e}")
     beep()
 
 def play_start_sound() -> None:
@@ -136,7 +136,7 @@ class PomodoroApp:
         self.state = 'Work'
         self.remaining = self.work_seconds
         self.progress.config(maximum=self.work_seconds, value=0)
-        play_start_sound()
+        play_start_sound()  # 作業開始時のみ
         notify(
             'Pomodoro',
             f'Start working! Set {self.set_count}/{self.sets_before_long}',
@@ -148,7 +148,7 @@ class PomodoroApp:
         self.state = 'Short Break'
         self.remaining = self.short_break_seconds
         self.progress.config(maximum=self.short_break_seconds, value=0)
-        play_start_sound()
+        # 休憩開始時は音を鳴らさない
         notify('Pomodoro', 'Short break!')
         self._update_labels()
         self._schedule_tick()
@@ -157,7 +157,7 @@ class PomodoroApp:
         self.state = 'Long Break'
         self.remaining = self.long_break_seconds
         self.progress.config(maximum=self.long_break_seconds, value=0)
-        play_start_sound()
+        # 長休憩開始時も音を鳴らさない
         notify('Pomodoro', 'Long break!')
         self._update_labels()
         self._schedule_tick()
@@ -177,8 +177,8 @@ class PomodoroApp:
             self._schedule_tick()
 
     def _advance_phase(self) -> None:
-        play_end_sound()
         if self.state == 'Work':
+            play_end_sound()  # 作業終了時のみ
             if self.set_count == self.sets_before_long:
                 self._start_long_break()
             else:

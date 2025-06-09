@@ -53,6 +53,8 @@ class PomodoroApp:
 
         self._build_ui()
 
+        self.start()  # 起動と同時に自動スタート
+
     def _build_ui(self) -> None:
         self.root.title('Pomodoro Timer')
 
@@ -72,8 +74,8 @@ class PomodoroApp:
         self.progress.pack(fill='x', padx=10, pady=5)
 
         btn_frame = tk.Frame(self.root)
-        self.start_button.pack(in_=btn_frame, side='left', expand=True, fill='x', padx=5)
-        self.reset_button.pack(in_=btn_frame, side='left', expand=True, fill='x', padx=5)
+        self.start_button.pack(padx=20, pady=10)
+        self.reset_button.pack(padx=20, pady=10)
         btn_frame.pack(fill='x', pady=10)
 
     def start(self) -> None:
